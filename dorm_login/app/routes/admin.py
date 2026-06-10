@@ -1,6 +1,6 @@
 ﻿from flask import Blueprint, render_template, request, session, flash, redirect, url_for
 from werkzeug.security import generate_password_hash
-from app.models import get_db, get_latest_utility_rate
+from app.models import get_db, get_latest_utility_rate, get_all_dormitories, add_dormitory, delete_dormitory
 from app.config import Config
 from app.auth_helpers import require_admin
 import sqlite3
@@ -268,3 +268,35 @@ def admin_leaves():
     if not require_admin():
         return redirect(url_for("auth.login"))
     return render_template("admin_leaves.html")
+
+# ===== Dormitory Management =====
+
+@admin_bp.route("/admin/dormitories")
+def admin_dormitories():
+    if not require_admin():
+        return redirect(url_for("auth.login"))
+    dorms = get_all_dormitories()
+    return render_template("admin_dormitories.html", dorms=dorms)
+
+
+@admin_bp.route("/admin/dormitories/add", methods=["POST"])
+def admin_add_dormitory():
+    if not require_admin():
+        return redirect(url_for("auth.login"))
+    dorm_number = request.form["dorm_number"]
+    try:
+        capacity = int(request.form.get("capacity", 4))
+    except (ValueError, TypeError):
+        capacity = 4
+    ok, msg = add_dormitory(dorm_number, capacity)
+    flash(msg, "success" if ok else "danger")
+    return redirect(url_for("admin.admin_dormitories"))
+
+
+@admin_bp.route("/admin/dormitories/delete/<int:dorm_id>", methods=["POST"])
+def admin_delete_dormitory(dorm_id):
+    if not require_admin():
+        return redirect(url_for("auth.login"))
+    ok, msg = delete_dormitory(dorm_id)
+    flash(msg, "success" if ok else "danger")
+    return redirect(url_for("admin.admin_dormitories"))

@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+{% block title %}宿舍管理{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-building"></i> 宿舍管理</h2>
+    <p style="font-size:0.82rem;color:#94a3b8;margin:4px 0 0;">管理系统预存的宿舍房间，注册时学生将从此列表中选择</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card-clean">
+    <div class="card-title"><i class="fas fa-plus-circle"></i> 添加宿舍</div>
+    <form method="post" action="{{ url_for('admin.admin_add_dormitory') }}" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+            <label style="font-size:0.76rem;color:#64748b;font-weight:600;">宿舍号</label>
+            <input type="text" name="dorm_number" class="form-control" placeholder="例：A栋101" required style="width:180px;">
+        </div>
+        <div>
+            <label style="font-size:0.76rem;color:#64748b;font-weight:600;">容量（人）</label>
+            <input type="number" name="capacity" class="form-control" value="4" min="1" max="10" style="width:100px;">
+        </div>
+        <button type="submit" class="btn-primary-clean"><i class="fas fa-plus"></i> 添加</button>
+    </form>
+</div>
+
+<div class="card-clean">
+    <div class="card-title"><i class="fas fa-list"></i> 宿舍列表 <span style="font-weight:400;font-size:0.76rem;color:#94a3b8;">（共 {{ dorms|length }} 间）</span></div>
+    {% if dorms %}
+    <table class="table-clean">
+        <thead>
+            <tr>
+                <th>宿舍号</th>
+                <th>容量</th>
+                <th>入住人数</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in dorms %}
+            <tr>
+                <td><strong>{{ d.dorm_number }}</strong></td>
+                <td>{{ d.capacity }} 人</td>
+                <td>{{ d.occupant_count }} 人</td>
+                <td>
+                    {% if d.occupant_count >= d.capacity %}
+                    <span class="badge-tag" style="background:#fee2e2;color:#ef4444;">已满</span>
+                    {% else %}
+                    <span class="badge-tag" style="background:#d1fae5;color:#10b981;">有空位</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:0.76rem;color:#94a3b8;">{{ d.created_at[:10] if d.created_at else '-' }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.admin_delete_dormitory', dorm_id=d.id) }}" onsubmit="return confirm('确定删除宿舍 {{ d.dorm_number }} 吗？');" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            {% if d.occupant_count > 0 %}disabled title="有学生入住，无法删除"{% endif %}>
+                            <i class="fas fa-trash"></i> 删除
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#94a3b8;text-align:center;padding:24px;">暂无宿舍数据，请先添加</p>
+    {% endif %}
+</div>
+{% endblock %}
