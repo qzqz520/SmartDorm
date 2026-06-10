@@ -219,27 +219,11 @@ def get_dorm_members(dorm_number):
 
 
 def get_available_dormitories():
-    """Return dormitories that aren't full yet, with occupant counts."""
-    db = get_db()
-    rows = db.execute("""
-        SELECT d.dorm_number, d.capacity
-        FROM dormitories d
-        WHERE d.capacity > (
-            SELECT COALESCE(COUNT(*), 0) FROM students s
-            WHERE s.dorm_number = d.dorm_number AND s.is_admin = 0
-        )
-        ORDER BY d.dorm_number
-    """).fetchall()
-    db.close()
-    dorms = []
-    for row in rows:
-        occupant_count = get_student_count_in_dorm(row["dorm_number"])
-        dorms.append({
-            "dorm_number": row["dorm_number"],
-            "capacity": row["capacity"],
-            "occupant_count": occupant_count
-        })
-    return dorms
+    """Return dormitories that aren't full yet, with occupant counts.
+
+    Reuses get_all_dormitories() to avoid N+1 queries, then filters in Python."""
+    all_dorms = get_all_dormitories()
+    return [d for d in all_dorms if d["occupant_count"] < d["capacity"]]
 
 
 def get_all_dormitories():
