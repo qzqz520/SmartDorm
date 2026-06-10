@@ -178,7 +178,15 @@ body {
             </div>
             <div class="form-group">
                 <label><i class="fas fa-home"></i> 宿舍号</label>
-                <input type="text" name="dorm_number" class="form-control" placeholder="例如：A栋101" required>
+                <select name="dorm_number" class="form-control" required>
+                    <option value="">-- 请选择宿舍 --</option>
+                    {% for d in available_dorms %}
+                    <option value="{{ d.dorm_number }}">{{ d.dorm_number }} ({{ d.occupant_count }}/{{ d.capacity }}人)</option>
+                    {% endfor %}
+                </select>
+                {% if not available_dorms %}
+                <small style="color:#94a3b8;">暂无可选宿舍，请联系管理员添加</small>
+                {% endif %}
             </div>
             <div class="form-group">
                 <label><i class="fas fa-lock"></i> 密码</label>
