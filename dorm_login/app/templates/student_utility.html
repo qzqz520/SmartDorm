@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block title %}水电账单{% endblock %}
+{% block extra_head %}
+<style>
+.badge-paid { background: #d1fae5; color: #065f46; }
+.badge-unpaid { background: #fee2e2; color: #dc2626; }
+.empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+.empty-state i { font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.4; }
+.amount { font-weight: 700; color: #1e293b; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-receipt" style="color:#06b6d4;"></i> 水电费账单</h2>
+</div>
+<div class="card-clean">
+    <div class="card-title" style="border-bottom-color:#06b6d4;"><i class="fas fa-list"></i> 账单记录</div>
+    <div style="overflow-x:auto;">
+        <table class="table-clean">
+            <thead><tr><th>月份</th><th>用水量</th><th>水费</th><th>用电量</th><th>电费</th><th>合计</th><th>状态</th></tr></thead>
+            <tbody id="utility-list"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function loadUtility() {
+    fetch('/api/my_utility').then(function(r){return r.json()}).then(function(data){
+        var h = '';
+        if (data.length === 0) {
+            h = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-inbox"></i>暂无账单记录</div></td></tr>';
+        } else {
+            data.forEach(function(r){
+                h += '<tr>' +
+                    '<td><strong>' + r.billing_month + '</strong></td>' +
+                    '<td>' + r.water_usage + ' 吨</td>' +
+                    '<td>¥' + parseFloat(r.water_fee).toFixed(2) + '</td>' +
+                    '<td>' + r.electricity_usage + ' 度</td>' +
+                    '<td>¥' + parseFloat(r.electricity_fee).toFixed(2) + '</td>' +
+                    '<td><span class="amount">¥' + parseFloat(r.total_fee).toFixed(2) + '</span></td>' +
+                    '<td><span class="badge-tag ' + (r.is_paid ? 'badge-paid' : 'badge-unpaid') + '">' + (r.is_paid ? '✅ 已缴费' : '⏳ 未缴费') + '</span></td>' +
+                    '</tr>';
+            });
+        }
+        document.getElementById('utility-list').innerHTML = h;
+    });
+}
+loadUtility();
+</script>
+{% endblock %}

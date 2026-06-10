@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+{% block title %}报修申请{% endblock %}
+{% block extra_head %}
+<style>
+.form-control:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.btn-submit {
+    padding: 10px 22px; border-radius: 10px; border: none;
+    font-size: 0.84rem; font-weight: 600; cursor: pointer;
+    background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.2);
+}
+.btn-submit:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.3); }
+.btn-submit:active { transform: translateY(0); }
+
+.badge-pending { background: #fef3c7; color: #b45309; }
+.badge-in_progress { background: #dbeafe; color: #2563eb; }
+.badge-completed { background: #d1fae5; color: #065f46; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+.empty-state i { font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.4; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-wrench" style="color:#6366f1;"></i> 报修申请</h2>
+</div>
+
+<div class="card-clean">
+    <div class="card-title"><i class="fas fa-plus-circle"></i> 提交报修</div>
+    <input type="text" id="repair-title" class="form-control" placeholder="故障标题（如：空调不制冷）" required style="margin-bottom:10px;">
+    <textarea id="repair-desc" class="form-control" rows="3" placeholder="详细描述具体故障现象..." style="margin-bottom:12px;"></textarea>
+    <button class="btn-submit" onclick="submitRepair()"><i class="fas fa-paper-plane"></i> 提交报修</button>
+</div>
+
+<div class="card-clean">
+    <div class="card-title"><i class="fas fa-list"></i> 我的报修记录</div>
+    <div style="overflow-x:auto;">
+        <table class="table-clean">
+            <thead><tr><th>标题</th><th>描述</th><th>状态</th><th>管理员回复</th><th>提交时间</th></tr></thead>
+            <tbody id="repair-list"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function statusBadge(s) {
+    var map = { pending: "待处理", in_progress: "处理中", completed: "已完成" };
+    return '<span class="badge-tag badge-' + s + '">' + (map[s] || s) + '</span>';
+}
+function loadRepairs() {
+    fetch("/api/my_repairs").then(function(r){return r.json()}).then(function(data){
+        var h = "";
+        if (data.length === 0) {
+            h = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-inbox"></i>暂无报修记录</div></td></tr>';
+        } else {
+            data.forEach(function(d){
+                h += "<tr><td><strong>" + d.title + "</strong></td><td>" + (d.description || "-") + "</td><td>" + statusBadge(d.status) + "</td><td>" + (d.admin_remark || '<span style=color:#cbd5e1>暂无回复</span>') + "</td><td style=font-size:.78rem;color:#94a3b8>" + d.created_at + "</td></tr>";
+            });
+        }
+        document.getElementById("repair-list").innerHTML = h;
+    });
+}
+function submitRepair() {
+    var title = document.getElementById("repair-title").value.trim();
+    if (!title) { alert("请输入故障标题"); return; }
+    var btn = event.target;
+    fetch("/api/repairs/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title, description: document.getElementById("repair-desc").value })
+    }).then(function(r){return r.json()}).then(function(d){
+        if (d.ok) {
+            document.getElementById("repair-title").value = "";
+            document.getElementById("repair-desc").value = "";
+            loadRepairs();
+        } else { alert(d.error); }
+    });
+}
+loadRepairs();
+</script>
+{% endblock %}

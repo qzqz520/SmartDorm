@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block title %}访客预约{% endblock %}
+{% block extra_head %}
+<style>
+.form-control:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+.btn-submit {
+    padding: 10px 22px; border-radius: 10px; border: none;
+    font-size: 0.84rem; font-weight: 600; cursor: pointer;
+    background: linear-gradient(135deg,#10b981,#059669); color: #fff;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.2);
+}
+.btn-submit:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.3); }
+.btn-submit:active { transform: translateY(0); }
+.row-fields { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.row-fields .form-control { flex: 1; min-width: 140px; margin-bottom: 0; }
+
+.badge-pending { background: #fef3c7; color: #b45309; }
+.badge-approved { background: #dbeafe; color: #2563eb; }
+.badge-checked_out { background: #d1fae5; color: #065f46; }
+.badge-rejected { background: #fee2e2; color: #dc2626; }
+.empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+.empty-state i { font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.4; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-user-plus" style="color:#10b981;"></i> 访客预约</h2>
+</div>
+
+<div class="card-clean">
+    <div class="card-title" style="border-bottom-color:#10b981;"><i class="fas fa-calendar-plus"></i> 预约访客</div>
+    <div class="row-fields">
+        <input type="text" id="vname" class="form-control" placeholder="访客姓名 *" required>
+        <input type="text" id="vidcard" class="form-control" placeholder="身份证号">
+        <input type="text" id="vphone" class="form-control" placeholder="手机号">
+    </div>
+    <input type="text" id="vpurpose" class="form-control" placeholder="来访目的" style="margin-bottom:12px;">
+    <button class="btn-submit" onclick="submitVisitor()"><i class="fas fa-paper-plane"></i> 提交预约</button>
+</div>
+
+<div class="card-clean">
+    <div class="card-title" style="border-bottom-color:#10b981;"><i class="fas fa-history"></i> 预约记录</div>
+    <div style="overflow-x:auto;">
+        <table class="table-clean">
+            <thead><tr><th>姓名</th><th>身份证</th><th>电话</th><th>目的</th><th>状态</th><th>签到</th><th>签退</th><th>预约时间</th></tr></thead>
+            <tbody id="visitor-list"></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function statusBadge(s) {
+    var map = { pending: "待审核", approved: "已批准", checked_out: "已签退", rejected: "已拒绝" };
+    return '<span class="badge-tag badge-' + s + '">' + (map[s] || s) + '</span>';
+}
+function loadVisitors() {
+    fetch("/api/my_visitors").then(function(r){return r.json()}).then(function(data){
+        var h = "";
+        if (data.length === 0) {
+            h = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i>暂无预约记录</div></td></tr>';
+        } else {
+            data.forEach(function(v){
+                h += "<tr><td><strong>" + v.visitor_name + "</strong></td><td>" + (v.id_card || "-") + "</td><td>" + (v.phone || "-") + "</td><td>" + (v.purpose || "-") + "</td><td>" + statusBadge(v.status) + "</td><td style=font-size:.78rem>" + (v.check_in_time || "-") + "</td><td style=font-size:.78rem>" + (v.check_out_time || "-") + "</td><td style=font-size:.75rem;color:#94a3b8>" + v.created_at + "</td></tr>";
+            });
+        }
+        document.getElementById("visitor-list").innerHTML = h;
+    });
+}
+function submitVisitor() {
+    var n = document.getElementById("vname").value.trim();
+    if (!n) { alert("请输入访客姓名"); return; }
+    fetch("/api/visitors/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            visitor_name: n,
+            id_card: document.getElementById("vidcard").value,
+            phone: document.getElementById("vphone").value,
+            purpose: document.getElementById("vpurpose").value
+        })
+    }).then(function(r){return r.json()}).then(function(d){
+        if (d.ok) {
+            document.getElementById("vname").value = "";
+            document.getElementById("vidcard").value = "";
+            document.getElementById("vphone").value = "";
+            document.getElementById("vpurpose").value = "";
+            loadVisitors();
+        } else { alert(d.error); }
+    });
+}
+loadVisitors();
+</script>
+{% endblock %}

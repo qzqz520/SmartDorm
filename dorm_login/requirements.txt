@@ -1,0 +1,6 @@
+﻿Flask>=3.0
+Flask-WTF>=1.2
+Flask-SocketIO>=5.3
+werkzeug>=3.0
+paho-mqtt>=2.0
+pywebview>=5.0

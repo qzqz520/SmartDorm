@@ -1,0 +1,424 @@
+{% extends "layout.html" %}
+{% block title %}全部宿舍监控{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+/* ===== Cards Grid ===== */
+.cards-container {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+}
+
+.dorm-card {
+    border: none; border-radius: 16px; padding: 0; color: #fff;
+    position: relative; overflow: hidden; cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-height: 140px; display: flex; flex-direction: column;
+}
+.dorm-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.16);
+}
+.dorm-card:active { transform: scale(0.97); }
+
+.dorm-card .card-inner { padding: 18px 18px 14px; flex: 1; position: relative; z-index: 1; }
+.dorm-card::after {
+    content: ''; position: absolute; top: -30px; right: -30px;
+    width: 110px; height: 110px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); pointer-events: none;
+}
+.dorm-card h5 {
+    font-size: 0.85rem; margin: 0 0 10px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+}
+.dorm-card .card-temp { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 8px; }
+.dorm-card .card-temp sup { font-size: 0.85rem; font-weight: 500; opacity: 0.7; }
+.dorm-card .card-meta { font-size: 0.74rem; opacity: 0.85; display: flex; gap: 10px; flex-wrap: wrap; }
+.dorm-card .card-meta span { display: flex; align-items: center; gap: 3px; }
+.dorm-card .card-time {
+    position: absolute; bottom: 8px; right: 12px;
+    font-size: 0.62rem; opacity: 0.45; z-index: 1;
+}
+
+.alert-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 14px;
+    font-size: 0.64rem; font-weight: 700; letter-spacing: 0.3px;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+@keyframes badgePulse {
+    0%,100% { box-shadow: 0 0 0 0 currentColor; }
+    50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+/* Color themes for cards */
+.ct-1 { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+.ct-2 { background: linear-gradient(135deg,#ec4899,#f43f5e); }
+.ct-3 { background: linear-gradient(135deg,#06b6d4,#0ea5e9); }
+.ct-4 { background: linear-gradient(135deg,#10b981,#059669); }
+.ct-5 { background: linear-gradient(135deg,#f97316,#eab308); }
+.ct-6 { background: linear-gradient(135deg,#a78bfa,#7c3aed); }
+.ct-7 { background: linear-gradient(135deg,#22d3ee,#3b82f6); }
+.ct-8 { background: linear-gradient(135deg,#fb923c,#db2777); }
+
+/* ===== Status Bar ===== */
+.status-bar {
+    background: #fff; border-radius: 12px; padding: 12px 20px;
+    margin-bottom: 18px; border: 1px solid #f0f0f0;
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    font-size: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.live-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+    display: inline-block; animation: pulse-dot 1.5s ease-in-out infinite; margin-right: 4px;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(1.8)} }
+
+/* ===== Modal ===== */
+.modal-overlay {
+    display: none; position: fixed; z-index: 9999; left: 0; top: 0;
+    width: 100%; height: 100%; background: rgba(15,23,42,0.55);
+    align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+    background: #fff; border-radius: 20px; padding: 28px 32px;
+    max-width: 800px; width: 94%; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+    animation: modalIn 0.25s cubic-bezier(0.16,1,0.3,1);
+    position: relative;
+}
+@keyframes modalIn { from { opacity: 0; transform: scale(0.94) translateY(16px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-close {
+    position: absolute; right: 18px; top: 18px; border: none; background: #f1f5f9;
+    width: 36px; height: 36px; border-radius: 12px; font-size: 1.1rem;
+    cursor: pointer; color: #64748b; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: #e2e8f0; color: #1e293b; }
+
+.modal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.modal-grid .full { grid-column: 1 / -1; }
+
+.info-card {
+    background: #f8fafc; border-radius: 12px; padding: 14px 16px;
+    border: 1px solid #f0f0f0; transition: background 0.15s;
+}
+.info-card:hover { background: #f1f5f9; }
+.info-card h5 { font-size: 0.72rem; color: #94a3b8; margin: 0 0 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.info-card .big-val { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+.info-card .big-val.warn { color: #dc2626; }
+
+.student-chip {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    background: #eef2ff; color: #4338ca; font-size: 0.76rem;
+    margin: 3px 4px; border: 1px solid #c7d2fe; font-weight: 500;
+}
+.student-chip.leader { background: #fffbeb; color: #b45309; border-color: #fcd34d; font-weight: 600; }
+
+.alert-chip {
+    display: inline-block; padding: 3px 10px; border-radius: 14px;
+    font-size: 0.7rem; margin: 2px 3px; color: #fff; font-weight: 600;
+}
+
+/* Bed Grid */
+.bed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+.bed-cell {
+    background: #fff; border: 2px solid #e2e8f0; border-radius: 12px;
+    padding: 16px 10px; text-align: center; min-height: 68px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; font-size: 0.78rem; transition: all 0.2s;
+}
+.bed-cell.occupied { border-color: #6366f1; background: #eef2ff; }
+.bed-cell.leader { border-color: #f59e0b; background: #fffbeb; box-shadow: 0 2px 10px rgba(245,158,11,0.1); }
+.bed-cell .bed-num { font-size: 0.64rem; color: #94a3b8; font-weight: 600; }
+.bed-cell .bed-name { font-weight: 600; color: #1e293b; font-size: 0.84rem; margin-top: 2px; }
+.bed-cell .badge-leader {
+    font-size: 0.6rem; padding: 3px 8px; border-radius: 10px;
+    background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; margin-top: 5px; font-weight: 600;
+}
+
+/* Editor */
+.bed-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+.bed-slot { background: #f8fafc; border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; }
+.bed-slot h6 { font-size: 0.76rem; color: #64748b; margin: 0 0 6px; font-weight: 600; }
+.bed-slot select { width: 100%; padding: 7px 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.78rem; }
+.bed-slot select:focus { border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+
+.btn-sm { display: inline-block; padding: 3px 10px; border-radius: 6px; border: none; font-size: 0.64rem; font-weight: 600; cursor: pointer; background: #6366f1; color: #fff; transition: opacity 0.15s; }
+.btn-sm:hover { opacity: 0.85; }
+.mt-1 { margin-top: 8px; } .mt-2 { margin-top: 12px; }
+
+/* Skeleton */
+.skel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.skel {
+    background: linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
+    background-size: 200% 100%; animation: shimmer 1.2s infinite;
+    border-radius: 16px; min-height: 150px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <h2 style="font-size:1.15rem;font-weight:700;margin:0;color:#1e293b;">
+        <i class="fas fa-th-large" style="color:#6366f1;"></i> 全部宿舍实时监控
+    </h2>
+    <span class="badge-tag" style="background:#d1fae5;color:#065f46;font-weight:500;">
+        <span class="live-dot"></span> <span id="live-status">加载中...</span>
+    </span>
+</div>
+
+<div class="status-bar">
+    <span style="color:#64748b;"><i class="far fa-clock"></i> 每 <strong>1</strong> 分钟同步</span>
+    <span style="color:#dc2626;font-weight:500;"><i class="fas fa-thermometer-half"></i> 高温: <strong id="alert-temp">0</strong></span>
+    <span style="color:#d97706;font-weight:500;"><i class="fas fa-fire"></i> 烟雾: <strong id="alert-smoke">0</strong></span>
+    <span style="color:#6366f1;font-size:0.78rem;"><i class="fas fa-hand-pointer"></i> 点击卡片查看详情</span>
+</div>
+
+<div id="cards" class="cards-container">
+    <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+</div>
+
+<!-- Detail Modal -->
+<div id="detailModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+        <h3 id="modal-title" style="font-size:1.1rem;font-weight:700;color:#1e293b;margin:0 0 16px;">
+            <i class="fas fa-building"></i> 宿舍详情
+        </h3>
+        <div class="modal-grid" id="modal-body"></div>
+        <div class="mt-2" id="modal-chart-wrap" style="height:220px;display:none;">
+            <div id="modal-chart" style="width:100%;height:220px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var modalChartInstance = null;
+var allSensorData = [];
+var socket = null;
+
+function loadData() {
+    fetch("/api/latest").then(function(r){return r.json()}).then(function(data){
+        allSensorData = data;
+        renderCards(data);
+        updateStatusBar(data);
+        document.getElementById("live-status").textContent = data.length + " 间宿舍";
+    }).catch(function(){
+        document.getElementById("live-status").textContent = "连接失败";
+    });
+}
+
+try {
+    if (typeof io !== "undefined") {
+        socket = io();
+        socket.on("connect", function() {
+            if (allSensorData.length) document.getElementById("live-status").textContent = "实时推送中";
+        });
+        socket.on("disconnect", function() {
+            document.getElementById("live-status").textContent = "已断开";
+        });
+        socket.on("batch_update", function(data) {
+            if (!data || !data.sensors) return;
+            allSensorData = data.sensors;
+            data.sensors.forEach(function(s) {
+                if (!s.count && data.counts) s.count = data.counts[s.dorm];
+            });
+            renderCards(data.sensors);
+            updateStatusBar(data.sensors);
+            document.getElementById("live-status").textContent = data.time || "刚刚更新";
+            var d = document.getElementById("modal-title").dataset.dorm;
+            if (d && data.sensors.some(function(s){return s.dorm === d})) updateModalContent(d);
+        });
+    }
+} catch(e) { console.log("SocketIO not available"); }
+
+loadData();
+
+document.getElementById("cards").addEventListener("click", function(e) {
+    var c = e.target.closest(".dorm-card");
+    if (c) openModal(c.dataset.dorm);
+});
+
+function renderCards(data) {
+    var h = "";
+    data.forEach(function(d, i) {
+        var c = d.count || (Math.floor(Math.random() * 4) + 1);
+        var cls = "ct-" + ((i % 8) + 1);
+        var b = "";
+        if (d.temp > 37) b += '<span class="alert-badge" style="background:#dc2626;">高温</span>';
+        if (d.smoke > 50) b += '<span class="alert-badge" style="background:#d97706;margin-left:4px;">烟雾</span>';
+        var tw = d.temp > 37 ? "color:#fef08a;" : "";
+        var sw = d.smoke > 50 ? "color:#fef08a;" : "";
+        var ts = d.time || "";
+        if (ts.length > 16) ts = ts.slice(11, 16);
+        h += '<div class="dorm-card ' + cls + '" data-dorm="' + d.dorm + '">' +
+            '<div class="card-inner">' +
+            '<h5><i class="fas fa-building"></i> ' + d.dorm + '<span style="margin-left:auto;">' + b + '</span></h5>' +
+            '<div class="card-temp" style="' + tw + '">' + d.temp + '<sup>°C</sup></div>' +
+            '<div class="card-meta" style="' + sw + '">' +
+            '<span><i class="fas fa-tint"></i> ' + d.hum + '%</span>' +
+            '<span><i class="fas fa-fire"></i> ' + d.smoke + '</span>' +
+            '<span><i class="fas fa-users"></i> ' + c + '/4</span>' +
+            '</div></div>' +
+            '<div class="card-time">' + ts + '</div>' +
+            '</div>';
+    });
+    document.getElementById("cards").innerHTML = h;
+}
+
+function updateStatusBar(data) {
+    document.getElementById("alert-temp").textContent = data.filter(function(d){return d.temp > 37;}).length;
+    document.getElementById("alert-smoke").textContent = data.filter(function(d){return d.smoke > 50;}).length;
+}
+
+function openModal(dorm) {
+    document.getElementById("detailModal").classList.add("show");
+    document.getElementById("modal-title").innerHTML = '<i class="fas fa-building"></i> ' + dorm;
+    document.getElementById("modal-title").dataset.dorm = dorm;
+    updateModalContent(dorm);
+}
+
+function closeModal() {
+    document.getElementById("detailModal").classList.remove("show");
+    if (modalChartInstance) { modalChartInstance.dispose(); modalChartInstance = null; }
+}
+
+document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeModal(); });
+
+function updateModalContent(dorm) {
+    fetch("/api/dorm_details/" + encodeURIComponent(dorm)).then(function(r){return r.json()}).then(function(data){
+        var sensor = data.sensor || {temperature: 25, humidity: 50, smoke: 10, timestamp: ""};
+        var body = "";
+
+        body += '<div class="info-card full" style="font-size:0.76rem;color:#94a3b8;">📡 传感器最后更新: ' + (sensor.timestamp || "实时") + '</div>';
+
+        body += '<div class="info-card"><h5>🌡️ 温度</h5><div class="big-val' + (sensor.temperature > 37 ? " warn" : "") + '">' + sensor.temperature + '°C</div></div>';
+        body += '<div class="info-card"><h5>💧 湿度</h5><div class="big-val">' + sensor.humidity + '%</div></div>';
+        body += '<div class="info-card"><h5>🔥 烟雾</h5><div class="big-val' + (sensor.smoke > 50 ? " warn" : "") + '">' + sensor.smoke + '</div></div>';
+
+        // Beds
+        body += '<div class="info-card full"><h5>🛏️ 宿舍床位</h5><div class="bed-grid">';
+        for (var i = 0; i < 4; i++) {
+            var b = data.beds ? data.beds[i] : null;
+            var cls = b ? (b.is_leader ? " occupied leader" : " occupied") : "";
+            body += '<div class="bed-cell' + cls + '">' +
+                '<span class="bed-num">床位 ' + (i + 1) + '</span>' +
+                '<span class="bed-name">' + (b ? b.name : "空") + '</span>' +
+                (b && b.is_leader ? '<span class="badge-leader">🌟 宿舍长</span>' : "") +
+                '</div>';
+        }
+        body += '</div></div>';
+
+        // Alerts
+        body += '<div class="info-card full"><h5>🚨 最近告警</h5><div>';
+        if (data.alerts && data.alerts.length > 0) {
+            data.alerts.slice(0, 6).forEach(function(a) {
+                var label = a.alert_type === "TEMP" ? "高温" : "烟雾";
+                var bg = a.alert_type === "TEMP" ? "#dc2626" : "#d97706";
+                var ts = (a.timestamp || "").slice(11, 16);
+                body += '<span class="alert-chip" style="background:' + bg + '">' + label + ' ' + a.value + ' · ' + ts + '</span>';
+            });
+        } else {
+            body += '<span style="font-size:0.8rem;color:#94a3b8;">✅ 无告警记录</span>';
+        }
+        body += '</div></div>';
+
+        // Members
+        body += '<div class="info-card full"><h5>👥 宿舍成员 (' + (data.members ? data.members.length : 0) + '人)</h5>';
+        if (data.members && data.members.length > 0) {
+            data.members.forEach(function(s) {
+                body += '<span class="student-chip' + (s.is_leader ? ' leader' : '') + '">' +
+                    '<i class="far fa-user"></i> ' + s.name +
+                    (s.is_leader ? ' 🌟宿舍长' : '') +
+                    ' <small style="opacity:0.6;">' + s.student_id + '</small>' +
+                    (s.bed_number ? ' <small style="opacity:0.6;">· 床位' + s.bed_number + '</small>' : '') +
+                    '</span>';
+            });
+        } else {
+            body += '<span style="font-size:0.8rem;color:#94a3b8;">暂无成员</span>';
+        }
+        body += '</div>';
+
+        document.getElementById("modal-body").innerHTML = body;
+    });
+}
+
+/* ===== Bed Editor ===== */
+var CDE = null;
+
+function openBedEditor(d) {
+    CDE = d;
+    var o = document.getElementById("bep-overlay");
+    if (!o) {
+        o = document.createElement("div"); o.id = "bep-overlay";
+        o.style.cssText = "position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(15,23,42,0.5);backdrop-filter:blur(3px)";
+        o.onclick = function() { closeBedEditor(); };
+        document.body.appendChild(o);
+    }
+    o.style.display = "block";
+
+    var p = document.getElementById("bep-panel");
+    if (!p) {
+        p = document.createElement("div"); p.id = "bep-panel";
+        document.body.appendChild(p);
+    }
+    p.style.cssText = "position:fixed;z-index:10000;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:18px;padding:28px;max-width:480px;width:94%;box-shadow:0 24px 64px rgba(0,0,0,0.3);animation:modalIn .25s ease";
+    p.innerHTML = '<h4 style="margin:0 0 16px;font-size:1rem;font-weight:700;color:#1e293b;"><i class="fas fa-bed" style="color:#6366f1;"></i> ' + d + ' - 床位分配</h4>' +
+        '<div id="bep-inner" style="min-height:60px;text-align:center;color:#94a3b8;">加载中...</div>' +
+        '<button id="bep-save" style="width:100%;padding:10px;border-radius:10px;border:none;font-size:0.84rem;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:none;margin-top:10px;" onclick="saveBed()"><i class="fas fa-save"></i> 保存分配</button>';
+    p.style.display = "block";
+
+    fetch("/api/dorm_details/" + encodeURIComponent(d)).then(function(r){return r.json()}).then(function(data){
+        var ms = data.members || [];
+        var beds = data.beds || [null, null, null, null];
+        var h = '<div class="bed-editor-grid">';
+        for (var i = 0; i < 4; i++) {
+            h += '<div class="bed-slot"><h6>🛏️ 床位 ' + (i + 1) + '</h6><select id="bep-sel-' + i + '"><option value="">-- 空 --</option>';
+            ms.forEach(function(m) {
+                var sel = (beds[i] && beds[i].student_id === m.student_id) ? " selected" : "";
+                var ld = m.is_leader ? " 🌟宿舍长" : "";
+                h += '<option value="' + m.student_id + '"' + sel + '>' + m.name + ' (' + m.student_id + ')' + ld + '</option>';
+            });
+            h += '</select></div>';
+        }
+        h += '</div>';
+        document.getElementById("bep-inner").innerHTML = h;
+        document.getElementById("bep-save").style.display = "block";
+    }).catch(function(){
+        document.getElementById("bep-inner").innerHTML = '<span style="color:#ef4444;">❌ 加载失败</span>';
+    });
+}
+
+function closeBedEditor() {
+    var p = document.getElementById("bep-panel"), o = document.getElementById("bep-overlay");
+    if (p) p.style.display = "none";
+    if (o) o.style.display = "none";
+    CDE = null;
+}
+
+function saveBed() {
+    if (!CDE) return;
+    var d = CDE, beds = [];
+    for (var i = 0; i < 4; i++) {
+        var s = document.getElementById("bep-sel-" + i);
+        beds.push(s && s.value ? { student_id: s.value, is_leader: 0 } : null);
+    }
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    var btn = document.getElementById("bep-save");
+    btn.disabled = true; btn.innerHTML = "⏳ 保存中...";
+    fetch("/api/dorm_beds/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrf },
+        body: JSON.stringify({ dorm: d, beds: beds })
+    }).then(function(r){return r.json()}).then(function(data){
+        if (data.ok) { closeBedEditor(); location.reload(); }
+        else { alert(data.error || "保存失败"); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> 保存分配'; }
+    }).catch(function(){
+        alert("网络错误"); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> 保存分配';
+    });
+}
+</script>
+{% endblock %}

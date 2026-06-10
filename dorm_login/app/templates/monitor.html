@@ -1,0 +1,242 @@
+{% extends "layout.html" %}
+{% block title %}我的宿舍监控{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+/* ===== Hero Card ===== */
+.hero-card {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 18px; padding: 28px 32px; color: #fff;
+    position: relative; overflow: hidden;
+    max-width: 420px; box-shadow: 0 8px 32px rgba(99,102,241,0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hero-card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(99,102,241,0.35); }
+.hero-card::after {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+}
+.hero-card .dorm-label {
+    font-size: 0.8rem; opacity: 0.8; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+}
+.hero-card .big-temp {
+    font-size: 3rem; font-weight: 800; line-height: 1;
+    margin: 8px 0; letter-spacing: -1px;
+}
+.hero-card .big-temp sup { font-size: 1.2rem; font-weight: 500; margin-left: 2px; }
+.hero-card .metric-row {
+    display: flex; gap: 24px; margin-top: 14px; flex-wrap: wrap;
+}
+.hero-card .metric {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.84rem; opacity: 0.9;
+}
+.hero-card .metric i { font-size: 0.78rem; opacity: 0.7; }
+.hero-card .metric strong { font-weight: 700; }
+
+.hero-card .status-row {
+    margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;
+}
+.hero-card .live-tag {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px;
+    border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(4px);
+}
+.hero-card .live-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #4ade80;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.8); } }
+
+.hero-card .warn-tag {
+    display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+    border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+    animation: warnPulse 2s ease-in-out infinite;
+}
+.warn-tag.temp-warn { background: #dc2626; color: #fff; }
+.warn-tag.smoke-warn { background: #d97706; color: #fff; }
+@keyframes warnPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
+
+/* Chart */
+.chart-card {
+    background: #fff; border-radius: 16px; border: 1px solid #f0f0f0;
+    padding: 20px 24px; margin-top: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s;
+}
+.chart-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.chart-card h4 { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 4px; }
+.chart-card .chart-subtitle { font-size: 0.76rem; color: #94a3b8; margin-bottom: 14px; }
+
+/* Skeleton */
+.skel { background: linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 18px; max-width: 420px; height: 200px; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Info tip card */
+.info-tip {
+    margin-top: 20px; background: #f0f9ff; border: 1px solid #bae6fd;
+    border-radius: 12px; padding: 14px 18px; font-size: 0.8rem; color: #0369a1;
+    display: flex; align-items: flex-start; gap: 10px; max-width: 420px;
+}
+.info-tip i { font-size: 1rem; margin-top: 1px; }
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;gap:24px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:300px;">
+        <h2 style="font-size:1.15rem;font-weight:700;color:#1e293b;margin-bottom:4px;">
+            <i class="fas fa-home" style="color:#6366f1;"></i> 我的宿舍环境
+        </h2>
+        <p style="font-size:0.82rem;color:#94a3b8;margin-bottom:16px;">
+            宿舍：<strong style="color:#1e293b;">{{ dorm_number }}</strong>
+        </p>
+        <div id="card-container"><div class="skel"></div></div>
+        <div id="tip-container"></div>
+    </div>
+    <div style="flex:1.6;min-width:360px;">
+        <div class="chart-card">
+            <h4><i class="fas fa-chart-line" style="color:#6366f1;"></i> 历史趋势</h4>
+            <p class="chart-subtitle">近 1 小时传感器数据变化</p>
+            <div id="chart" style="width:100%;height:340px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var chartInstance = null;
+var myDorm = "{{ dorm_number }}";
+
+function loadMyData() {
+    fetch("/api/mydata").then(function(r) { return r.json(); }).then(function(data) {
+        if (data.length > 0) renderCard(data[0]);
+        else document.getElementById("card-container").innerHTML =
+            '<div class="hero-card"><div style="padding:20px;text-align:center;opacity:0.7;">⏳ 等待传感器数据...</div></div>';
+    });
+}
+
+function renderCard(d) {
+    var badges = "";
+    var tipHtml = "";
+
+    if (d.temp > 37) {
+        badges += '<span class="warn-tag temp-warn">⚠ 高温警报 ' + d.temp + '°C</span>';
+        tipHtml = '<div class="info-tip"><i class="fas fa-exclamation-triangle"></i><div><strong>高温警报</strong><br>宿舍温度超过 37°C 安全阈值，请检查空调设备并及时通风降温。已自动记录告警。</div></div>';
+    }
+    if (d.smoke > 50) {
+        badges += '<span class="warn-tag smoke-warn">🔥 烟雾警报 ' + d.smoke + '</span>';
+        tipHtml = '<div class="info-tip" style="background:#fff7ed;border-color:#fed7aa;color:#c2410c;"><i class="fas fa-fire"></i><div><strong>烟雾警报</strong><br>宿舍烟雾浓度超过 50 安全阈值，请立即检查宿舍内是否有火源或异常情况！已自动记录告警。</div></div>';
+    }
+
+    var ts = d.time || "";
+    if (ts.length > 16) ts = ts.slice(11, 16);
+
+    document.getElementById("card-container").innerHTML =
+        '<div class="hero-card">' +
+        '<div class="dorm-label"><i class="fas fa-map-marker-alt"></i> ' + myDorm + '</div>' +
+        '<div class="big-temp">' + d.temp + '<sup>°C</sup></div>' +
+        '<div class="metric-row">' +
+        '<div class="metric"><i class="fas fa-tint"></i> 湿度 <strong>' + d.hum + '%</strong></div>' +
+        '<div class="metric"><i class="fas fa-fire"></i> 烟雾 <strong>' + d.smoke + '</strong></div>' +
+        '<div class="metric"><i class="fas fa-users"></i> 人数 <strong>' + (d.count || "?") + '</strong></div>' +
+        '</div>' +
+        '<div class="status-row">' +
+        '<span class="live-tag"><span class="live-dot"></span> 实时 · ' + ts + '</span>' +
+        badges +
+        '</div>' +
+        '</div>';
+
+    document.getElementById("tip-container").innerHTML = tipHtml;
+}
+
+function loadMyHistory() {
+    fetch("/api/history/" + encodeURIComponent(myDorm)).then(function(r) { return r.json(); }).then(function(hd) {
+        var cd = document.getElementById("chart");
+        if (chartInstance) chartInstance.dispose();
+        chartInstance = echarts.init(cd);
+
+        if (!hd.times || hd.times.length === 0) {
+            chartInstance.setOption({
+                title: { text: "暂无历史数据", subtext: "请等待传感器上报", left: "center", top: "center",
+                    textStyle: { color: "#94a3b8", fontSize: 14, fontWeight: 500 },
+                    subtextStyle: { color: "#cbd5e1", fontSize: 12 } }
+            });
+            return;
+        }
+
+        chartInstance.setOption({
+            tooltip: {
+                trigger: "axis",
+                backgroundColor: "#fff",
+                borderColor: "#e2e8f0",
+                textStyle: { color: "#1e293b", fontSize: 12 },
+                boxShadow: "0 4px 16px rgba(0,0,0,0.1)"
+            },
+            legend: {
+                data: ["温度 °C", "湿度 %", "烟雾"],
+                bottom: 0, textStyle: { fontSize: 11, color: "#64748b" },
+                itemWidth: 12, itemHeight: 8, itemGap: 20
+            },
+            grid: { top: 15, bottom: 38, left: 48, right: 20 },
+            xAxis: {
+                type: "category", data: hd.times, boundaryGap: false,
+                axisLine: { lineStyle: { color: "#e2e8f0" } },
+                axisLabel: { rotate: 30, fontSize: 9, color: "#94a3b8" },
+                axisTick: { show: false }
+            },
+            yAxis: {
+                type: "value",
+                splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } },
+                axisLabel: { fontSize: 10, color: "#94a3b8" }
+            },
+            series: [
+                {
+                    name: "温度 °C", type: "line", data: hd.temp,
+                    smooth: true, symbol: "none",
+                    lineStyle: { color: "#ef4444", width: 2 },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+                        {offset:0,color:"rgba(239,68,68,0.12)"},{offset:1,color:"rgba(239,68,68,0)"}
+                    ])}
+                },
+                {
+                    name: "湿度 %", type: "line", data: hd.hum,
+                    smooth: true, symbol: "none",
+                    lineStyle: { color: "#3b82f6", width: 2 },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+                        {offset:0,color:"rgba(59,130,246,0.1)"},{offset:1,color:"rgba(59,130,246,0)"}
+                    ])}
+                },
+                {
+                    name: "烟雾", type: "line", data: hd.smoke,
+                    smooth: true, symbol: "none",
+                    lineStyle: { color: "#f59e0b", width: 2 },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+                        {offset:0,color:"rgba(245,158,11,0.08)"},{offset:1,color:"rgba(245,158,11,0)"}
+                    ])}
+                }
+            ]
+        });
+    });
+}
+
+// SocketIO
+try {
+    if (typeof io !== "undefined") {
+        var socket = io();
+        socket.on("sensor_update", function(data) {
+            if (data && data.dorm === myDorm) { renderCard(data); loadMyHistory(); }
+        });
+        socket.on("batch_update", function(data) {
+            if (data && data.sensors) {
+                var mine = data.sensors.find(function(s) { return s.dorm === myDorm; });
+                if (mine) renderCard(mine);
+            }
+        });
+    }
+} catch(e) { console.log("SocketIO not available"); }
+
+loadMyData();
+loadMyHistory();
+</script>
+{% endblock %}

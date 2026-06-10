@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% block title %}访客管理{% endblock %}
+{% block extra_head %}
+<style>
+.badge-pending { background: #fef3c7; color: #b45309; }
+.badge-approved { background: #dbeafe; color: #2563eb; }
+.badge-checked_out { background: #d1fae5; color: #065f46; }
+.badge-rejected { background: #fee2e2; color: #dc2626; }
+.btn-clean {
+    padding: 5px 12px; border-radius: 7px; border: none; font-size: 0.7rem;
+    font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.btn-clean:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-approve { background: #10b981; color: #fff; }
+.btn-reject { background: #ef4444; color: #fff; }
+.btn-checkin { background: #3b82f6; color: #fff; }
+.btn-checkout { background: #8b5cf6; color: #fff; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-user-friends" style="color:#06b6d4;"></i> 访客管理</h2>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" style="font-size:0.84rem;border-radius:10px;">
+          {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card-clean">
+    <div class="card-title" style="border-bottom-color:#06b6d4;"><i class="fas fa-list"></i> 访客记录</div>
+    <div style="overflow-x:auto;">
+        <table class="table-clean">
+            <thead>
+                <tr><th>访客姓名</th><th>身份证</th><th>电话</th><th>受访学生</th><th>宿舍</th><th>目的</th><th>状态</th><th>签到</th><th>签退</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                {% for v in visitors %}
+                <tr>
+                    <td><strong>{{ v.visitor_name }}</strong></td>
+                    <td>{{ v.id_card or '-' }}</td>
+                    <td>{{ v.phone or '-' }}</td>
+                    <td>{{ v.student_name or '-' }}</td>
+                    <td>{{ v.visited_dorm }}</td>
+                    <td>{{ v.purpose or '-' }}</td>
+                    <td>
+                        <span class="badge-tag badge-{{ v.status }}">
+                            {% if v.status == 'pending' %}⏳ 待审核{% elif v.status == 'approved' %}✅ 已批准{% elif v.status == 'checked_out' %}🏁 已签退{% elif v.status == 'rejected' %}❌ 已拒绝{% else %}{{ v.status }}{% endif %}
+                        </span>
+                    </td>
+                    <td style="font-size:0.75rem;">{{ v.check_in_time or '-' }}</td>
+                    <td style="font-size:0.75rem;">{{ v.check_out_time or '-' }}</td>
+                    <td>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                            {% if v.status == 'pending' %}
+                            <form method="post" action="{{ url_for('admin.admin_approve_visitor', visitor_id=v.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-clean btn-approve">✅ 批准</button>
+                            </form>
+                            <form method="post" action="{{ url_for('admin.admin_reject_visitor', visitor_id=v.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-clean btn-reject">❌ 拒绝</button>
+                            </form>
+                            {% elif v.status == 'approved' and not v.check_in_time %}
+                            <form method="post" action="{{ url_for('admin.admin_checkin_visitor', visitor_id=v.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-clean btn-checkin">📥 签到</button>
+                            </form>
+                            {% endif %}
+                            {% if v.check_in_time and not v.check_out_time %}
+                            <form method="post" action="{{ url_for('admin.admin_checkout_visitor', visitor_id=v.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-clean btn-checkout">📤 签退</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

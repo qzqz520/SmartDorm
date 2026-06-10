@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智慧宿舍管理系统 - 登录</title>
+<link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --surface: rgba(255,255,255,0.95);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0f172a;
+    font-family: "Inter", "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Animated background */
+.bg-scene {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 20% 50%, rgba(99,102,241,0.25), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(139,92,246,0.2), transparent),
+        radial-gradient(ellipse 50% 60% at 50% 80%, rgba(6,182,212,0.12), transparent);
+}
+.bg-dots {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+}
+.bg-lines {
+    position: fixed; inset: 0; z-index: 0; opacity: 0.04;
+    background: repeating-linear-gradient(0deg, transparent, transparent 59px, #fff 59px, #fff 60px),
+                repeating-linear-gradient(90deg, transparent, transparent 59px, #fff 59px, #fff 60px);
+}
+
+/* Floating orbs */
+.orb {
+    position: fixed; border-radius: 50%; filter: blur(80px); z-index: 0;
+    animation: float 20s ease-in-out infinite;
+}
+.orb-1 { width: 350px; height: 350px; background: rgba(99,102,241,0.2); top: -100px; left: -100px; animation-delay: 0s; }
+.orb-2 { width: 280px; height: 280px; background: rgba(139,92,246,0.15); bottom: -80px; right: -80px; animation-delay: -7s; }
+.orb-3 { width: 200px; height: 200px; background: rgba(6,182,212,0.12); top: 50%; left: 60%; animation-delay: -14s; }
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+/* Card */
+.login-wrapper {
+    position: relative; z-index: 1; display: flex;
+    background: var(--surface); border-radius: 24px; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+    max-width: 880px; width: 94%;
+    backdrop-filter: blur(20px);
+    animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Left banner */
+.login-banner {
+    background: linear-gradient(160deg, #1e1b4b 0%, #312e81 30%, #4f46e5 60%, #6366f1 100%);
+    color: #fff; padding: 52px 40px; display: flex;
+    flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; flex: 1; min-width: 280px; position: relative; overflow: hidden;
+}
+.login-banner::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.08) 0%, transparent 60%);
+}
+.login-banner > * { position: relative; z-index: 1; }
+.login-banner .logo {
+    font-size: 3rem; margin-bottom: 16px;
+    background: rgba(255,255,255,0.12); width: 88px; height: 88px;
+    border-radius: 24px; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.3s ease;
+}
+.login-banner .logo:hover { transform: scale(1.05) rotate(-3deg); }
+.login-banner h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px; }
+.login-banner p { font-size: 0.8rem; opacity: 0.7; }
+.login-banner .features {
+    margin-top: 32px; display: flex; flex-direction: column; gap: 10px;
+    font-size: 0.78rem; opacity: 0.75;
+}
+.login-banner .features span { display: flex; align-items: center; gap: 8px; }
+.login-banner .features i { font-size: 0.7rem; opacity: 0.8; }
+
+/* Right form */
+.login-form {
+    flex: 1.1; padding: 52px 44px; display: flex;
+    flex-direction: column; justify-content: center;
+}
+.login-form h3 { font-weight: 700; color: #1e293b; margin-bottom: 2px; font-size: 1.4rem; }
+.login-form .subtitle { color: #94a3b8; font-size: 0.84rem; margin-bottom: 28px; }
+
+.form-group { margin-bottom: 18px; position: relative; }
+.form-group label {
+    font-size: 0.78rem; color: #64748b; font-weight: 600;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 5px;
+}
+.form-group label i { font-size: 0.7rem; color: var(--primary); }
+.form-control {
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 16px; font-size: 0.9rem; transition: all 0.2s ease;
+    background: #f8fafc; color: #1e293b;
+}
+.form-control:focus {
+    border-color: var(--primary); background: #fff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.1); outline: none;
+}
+.form-control::placeholder { color: #cbd5e1; }
+
+.btn-login {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff;
+    font-weight: 600; font-size: 0.95rem; cursor: pointer;
+    transition: all 0.2s ease; margin-top: 8px; letter-spacing: 0.3px;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+}
+.btn-login:hover {
+    opacity: 0.92; transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(99,102,241,0.35);
+}
+.btn-login:active { transform: translateY(0); }
+
+.register-link {
+    text-align: center; margin-top: 20px; font-size: 0.82rem; color: #94a3b8;
+}
+.register-link a { color: #6366f1; text-decoration: none; font-weight: 600; transition: color 0.15s; }
+.register-link a:hover { color: #4f46e5; }
+
+.alert { border-radius: 10px; font-size: 0.8rem; margin-bottom: 14px; border: none; animation: slideDown 0.3s ease; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 700px) {
+    .login-wrapper { flex-direction: column; max-width: 420px; }
+    .login-banner { padding: 36px 28px; }
+    .login-banner .features { display: none; }
+    .login-form { padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+<div class="bg-scene"></div><div class="bg-dots"></div><div class="bg-lines"></div>
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+
+<div class="login-wrapper">
+    <div class="login-banner">
+        <div class="logo"><i class="fas fa-building"></i></div>
+        <h2>智慧宿舍管理系统</h2>
+        <p>SmartDorm · 智能宿舍管理平台</p>
+        <div class="features">
+            <span><i class="fas fa-check-circle"></i> 实时环境监控</span>
+            <span><i class="fas fa-check-circle"></i> 智能报修管理</span>
+            <span><i class="fas fa-check-circle"></i> 访客预约系统</span>
+            <span><i class="fas fa-check-circle"></i> 水电费管理</span>
+        </div>
+    </div>
+    <div class="login-form">
+        <h3>👋 欢迎回来</h3>
+        <p class="subtitle">请登录您的账号以继续</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> 学号 / 账号</label>
+                <input type="text" name="student_id" class="form-control" placeholder="请输入学号" required autofocus>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> 密码</label>
+                <input type="password" name="password" class="form-control" placeholder="请输入密码" required>
+            </div>
+            <button type="submit" class="btn-login">
+                <i class="fas fa-arrow-right-to-bracket me-2"></i> 登 录
+            </button>
+        </form>
+        <p class="register-link">还没有账号？<a href="{{ url_for('auth.register') }}">立即注册 →</a></p>
+    </div>
+</div>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

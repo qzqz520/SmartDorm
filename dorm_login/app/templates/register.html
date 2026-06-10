@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智慧宿舍管理系统 - 注册</title>
+<link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+    --primary: #10b981;
+    --primary-dark: #059669;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0f172a;
+    font-family: "Inter", "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Background */
+.bg-scene {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 30% 60%, rgba(16,185,129,0.2), transparent),
+        radial-gradient(ellipse 60% 50% at 70% 30%, rgba(5,150,105,0.18), transparent),
+        radial-gradient(ellipse 50% 60% at 50% 80%, rgba(6,182,212,0.08), transparent);
+}
+.bg-dots {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.orb {
+    position: fixed; border-radius: 50%; filter: blur(80px); z-index: 0;
+    animation: float 18s ease-in-out infinite;
+}
+.orb-1 { width: 300px; height: 300px; background: rgba(16,185,129,0.18); top: -80px; right: -80px; animation-delay: 0s; }
+.orb-2 { width: 250px; height: 250px; background: rgba(6,182,212,0.12); bottom: -60px; left: -60px; animation-delay: -9s; }
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(25px, -25px) scale(1.08); }
+}
+
+/* Card */
+.login-wrapper {
+    position: relative; z-index: 1; display: flex;
+    background: rgba(255,255,255,0.95); border-radius: 24px; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05);
+    max-width: 880px; width: 94%;
+    animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Left banner */
+.login-banner {
+    background: linear-gradient(160deg, #064e3b 0%, #065f46 30%, #059669 60%, #10b981 100%);
+    color: #fff; padding: 44px 36px; display: flex;
+    flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; flex: 1; min-width: 260px; position: relative; overflow: hidden;
+}
+.login-banner::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 60% 30%, rgba(255,255,255,0.08) 0%, transparent 60%);
+}
+.login-banner > * { position: relative; z-index: 1; }
+.login-banner .logo {
+    font-size: 3rem; margin-bottom: 14px;
+    background: rgba(255,255,255,0.12); width: 80px; height: 80px;
+    border-radius: 22px; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.3s ease;
+}
+.login-banner .logo:hover { transform: scale(1.05) rotate(3deg); }
+.login-banner h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+.login-banner p { font-size: 0.8rem; opacity: 0.75; }
+.login-banner .tips {
+    margin-top: 28px; font-size: 0.76rem; opacity: 0.65; line-height: 1.8;
+}
+
+/* Right form */
+.login-form {
+    flex: 1.1; padding: 40px 44px; display: flex;
+    flex-direction: column; justify-content: center;
+}
+.login-form h3 { font-weight: 700; color: #1e293b; margin-bottom: 2px; font-size: 1.3rem; }
+.login-form .subtitle { color: #94a3b8; font-size: 0.84rem; margin-bottom: 20px; }
+
+.form-group { margin-bottom: 13px; }
+.form-group label {
+    font-size: 0.76rem; color: #64748b; font-weight: 600;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 5px;
+}
+.form-group label i { font-size: 0.68rem; color: var(--primary); }
+.form-control {
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    padding: 10px 14px; font-size: 0.88rem; transition: all 0.2s ease;
+    background: #f8fafc; color: #1e293b;
+}
+.form-control:focus {
+    border-color: var(--primary); background: #fff;
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.1); outline: none;
+}
+.form-control::placeholder { color: #cbd5e1; }
+
+.btn-login {
+    width: 100%; padding: 11px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+    font-weight: 600; font-size: 0.93rem; cursor: pointer;
+    transition: all 0.2s ease; margin-top: 6px;
+    box-shadow: 0 4px 16px rgba(16,185,129,0.25);
+}
+.btn-login:hover {
+    opacity: 0.92; transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(16,185,129,0.35);
+}
+.btn-login:active { transform: translateY(0); }
+
+.login-link {
+    text-align: center; margin-top: 14px; font-size: 0.8rem; color: #94a3b8;
+}
+.login-link a { color: #10b981; text-decoration: none; font-weight: 600; transition: color 0.15s; }
+.login-link a:hover { color: #059669; }
+
+.alert { border-radius: 10px; font-size: 0.78rem; margin-bottom: 10px; padding: 8px 12px; border: none; animation: slideDown 0.3s ease; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 700px) {
+    .login-wrapper { flex-direction: column; max-width: 420px; }
+    .login-banner { padding: 30px 24px; }
+    .login-banner .tips { display: none; }
+    .login-form { padding: 28px 22px; }
+}
+</style>
+</head>
+<body>
+<div class="bg-scene"></div><div class="bg-dots"></div>
+<div class="orb orb-1"></div><div class="orb orb-2"></div>
+
+<div class="login-wrapper">
+    <div class="login-banner">
+        <div class="logo"><i class="fas fa-user-plus"></i></div>
+        <h2>注册账号</h2>
+        <p>加入智慧宿舍管理系统</p>
+        <div class="tips">
+            注册后即可享受<br>智能宿舍管理服务<br>实时监控 · 一键报修 · 更多便利
+        </div>
+    </div>
+    <div class="login-form">
+        <h3>✨ 创建账号</h3>
+        <p class="subtitle">填写以下信息完成注册</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label><i class="fas fa-id-card"></i> 学号</label>
+                <input type="text" name="student_id" class="form-control" placeholder="请输入学号" required autofocus>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> 姓名</label>
+                <input type="text" name="name" class="form-control" placeholder="请输入姓名" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-home"></i> 宿舍号</label>
+                <input type="text" name="dorm_number" class="form-control" placeholder="例如：A栋101" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> 密码</label>
+                <input type="password" name="password" class="form-control" placeholder="请设置密码（至少6位）" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-check-circle"></i> 确认密码</label>
+                <input type="password" name="confirm" class="form-control" placeholder="请再次输入密码" required>
+            </div>
+            <button type="submit" class="btn-login">
+                <i class="fas fa-user-plus me-2"></i> 注 册
+            </button>
+        </form>
+        <p class="login-link">已有账号？<a href="{{ url_for('auth.login') }}">立即登录 →</a></p>
+    </div>
+</div>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

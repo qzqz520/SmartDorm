@@ -1,0 +1,22 @@
+{
+  "name": "智慧宿舍管理系统",
+  "short_name": "SmartDorm",
+  "description": "智能宿舍管理系统 - 传感器监控、报修、访客、水电费管理",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
