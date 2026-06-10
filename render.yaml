@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: smartdorm
+    env: python
+    region: singapore
+    buildCommand: pip install -r dorm_login/requirements.txt
+    startCommand: cd dorm_login && python SmartDorm.py
+    envVars:
+      - key: SMARTDORM_SECRET_KEY
+        generateValue: true
+      - key: SMARTDORM_HOST
+        value: 0.0.0.0
+      - key: SMARTDORM_LOG_LEVEL
+        value: WARNING

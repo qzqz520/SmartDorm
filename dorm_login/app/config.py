@@ -19,7 +19,7 @@ _LOG_DIR.mkdir(parents=True, exist_ok=True)
 class Config:
     SECRET_KEY = os.environ.get("SMARTDORM_SECRET_KEY") or secrets.token_hex(32)
     FLASK_HOST = os.environ.get("SMARTDORM_HOST", "0.0.0.0")
-    FLASK_PORT = int(os.environ.get("SMARTDORM_PORT", 8888))
+    FLASK_PORT = int(os.environ.get("PORT") or os.environ.get("SMARTDORM_PORT", 8888))
     DATABASE_PATH = os.environ.get("SMARTDORM_DB", str(_DATA_DIR / "dormitory.db"))
     MQTT_BROKER = os.environ.get("SMARTDORM_MQTT_BROKER", "localhost")
     MQTT_PORT = int(os.environ.get("SMARTDORM_MQTT_PORT", 8866))
