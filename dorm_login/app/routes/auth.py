@@ -1,7 +1,7 @@
 ﻿import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import get_db, get_student_count_in_dorm
+from app.models import get_db, get_student_count_in_dorm, get_available_dormitories
 from app.config import Config
 
 auth_bp = Blueprint("auth", __name__)
@@ -42,7 +42,8 @@ def register():
             if get_student_count_in_dorm(dorm) >= Config.MAX_DORM_CAPACITY:
                 flash("该宿舍已满员（最大{}人），请选择其他宿舍".format(Config.MAX_DORM_CAPACITY), "danger")
                 db.close()
-                return render_template("register.html")
+                available_dorms = get_available_dormitories()
+                return render_template("register.html", available_dorms=available_dorms)
             try:
                 db.execute("INSERT INTO students (student_id, name, dorm_number, password_hash) VALUES (?,?,?,?)",
                     (sid, name, dorm, generate_password_hash(pw)))
@@ -53,7 +54,8 @@ def register():
             except sqlite3.IntegrityError:
                 flash("该学号已被注册", "danger")
                 db.close()
-    return render_template("register.html")
+    available_dorms = get_available_dormitories()
+    return render_template("register.html", available_dorms=available_dorms)
 
 @auth_bp.route("/logout")
 def logout():
