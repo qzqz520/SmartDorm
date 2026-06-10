@@ -32,6 +32,13 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
+    c.execute("""CREATE TABLE IF NOT EXISTS dormitories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        dorm_number TEXT UNIQUE NOT NULL,
+        capacity INTEGER DEFAULT 4,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     c.execute("""CREATE TABLE IF NOT EXISTS sensor_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         dorm_number TEXT NOT NULL,
@@ -122,6 +129,30 @@ def init_db():
     except sqlite3.IntegrityError:
         pass
 
+    # Seed dormitories — migrate existing first, then add presets
+    # 1) Migrate existing dorm_numbers from students (excluding 管理室)
+    existing_dorms = c.execute(
+        "SELECT DISTINCT dorm_number FROM students WHERE dorm_number != '管理室'"
+    ).fetchall()
+    for row in existing_dorms:
+        try:
+            c.execute("INSERT INTO dormitories (dorm_number, capacity) VALUES (?, 4)", (row[0],))
+        except sqlite3.IntegrityError:
+            pass
+
+    # 2) Seed 20 preset dormitories
+    preset_dorms = [
+        "A栋101","A栋102","A栋103","A栋104","A栋105","A栋106",
+        "B栋201","B栋202","B栋203","B栋204","B栋205","B栋206",
+        "C栋301","C栋302","C栋303","C栋304",
+        "D栋401","D栋402","D栋403","D栋404",
+    ]
+    for dn in preset_dorms:
+        try:
+            c.execute("INSERT INTO dormitories (dorm_number, capacity) VALUES (?, 4)", (dn,))
+        except sqlite3.IntegrityError:
+            pass
+
     c.execute("""CREATE TABLE IF NOT EXISTS notifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT NOT NULL,
@@ -185,3 +216,75 @@ def get_dorm_members(dorm_number):
     ).fetchall()
     db.close()
     return [dict(r) for r in rows]
+
+
+def get_available_dormitories():
+    """Return dormitories that aren't full yet, with occupant counts."""
+    db = get_db()
+    rows = db.execute("""
+        SELECT d.dorm_number, d.capacity
+        FROM dormitories d
+        WHERE d.capacity > (
+            SELECT COALESCE(COUNT(*), 0) FROM students s
+            WHERE s.dorm_number = d.dorm_number AND s.is_admin = 0
+        )
+        ORDER BY d.dorm_number
+    """).fetchall()
+    db.close()
+    dorms = []
+    for row in rows:
+        occupant_count = get_student_count_in_dorm(row["dorm_number"])
+        dorms.append({
+            "dorm_number": row["dorm_number"],
+            "capacity": row["capacity"],
+            "occupant_count": occupant_count
+        })
+    return dorms
+
+
+def get_all_dormitories():
+    """Return all dormitories with occupant counts (for admin page)."""
+    db = get_db()
+    rows = db.execute("""
+        SELECT d.id, d.dorm_number, d.capacity, d.created_at,
+               COALESCE((SELECT COUNT(*) FROM students s
+                         WHERE s.dorm_number = d.dorm_number AND s.is_admin = 0), 0) as occupant_count
+        FROM dormitories d
+        ORDER BY d.dorm_number
+    """).fetchall()
+    db.close()
+    return [dict(r) for r in rows]
+
+
+def add_dormitory(dorm_number, capacity):
+    """Insert a new dormitory. Returns (success: bool, message: str)."""
+    db = get_db()
+    try:
+        db.execute("INSERT INTO dormitories (dorm_number, capacity) VALUES (?, ?)",
+                   (dorm_number, capacity))
+        db.commit()
+        db.close()
+        return True, "宿舍 {} 添加成功".format(dorm_number)
+    except sqlite3.IntegrityError:
+        db.close()
+        return False, "宿舍号 {} 已存在".format(dorm_number)
+
+
+def delete_dormitory(dorm_id):
+    """Delete a dormitory only if no students occupy it. Returns (success: bool, message: str)."""
+    db = get_db()
+    dorm = db.execute("SELECT * FROM dormitories WHERE id = ?", (dorm_id,)).fetchone()
+    if not dorm:
+        db.close()
+        return False, "宿舍不存在"
+    occupant_count = db.execute(
+        "SELECT COUNT(*) as cnt FROM students WHERE dorm_number = ? AND is_admin = 0",
+        (dorm["dorm_number"],)
+    ).fetchone()["cnt"]
+    if occupant_count > 0:
+        db.close()
+        return False, "该宿舍尚有 {} 名学生入住，无法删除".format(occupant_count)
+    db.execute("DELETE FROM dormitories WHERE id = ?", (dorm_id,))
+    db.commit()
+    db.close()
+    return True, "宿舍 {} 已删除".format(dorm["dorm_number"])
