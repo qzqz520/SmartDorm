@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: smartdorm
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      cd frontend && npm install && npm run build
+    startCommand: python run.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SMARTDORM_SECRET_KEY
+        generateValue: true

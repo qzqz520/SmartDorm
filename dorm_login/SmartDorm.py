@@ -31,9 +31,7 @@ def get_local_ip():
 def start_server():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     logger = logging.getLogger("SmartDorm")
-    init_db()
-    gen_thread = threading.Thread(target=run_data_generator, daemon=True)
-    gen_thread.start()
+    # init_db() and data_generator are auto-started by app.app module import
     local_ip = get_local_ip()
     print("=" * 50)
     print("  智慧宿舍管理系统 - 已启动")
@@ -45,7 +43,8 @@ def start_server():
     print("  学生:   2021001 / 123456")
     print("=" * 50)
     webbrowser.open("http://127.0.0.1:{}".format(Config.FLASK_PORT))
-    socketio.run(app, debug=False, host=Config.FLASK_HOST, port=Config.FLASK_PORT, allow_unsafe_werkzeug=True, use_reloader=False)
+    is_prod = os.environ.get("RENDER") or os.environ.get("PORT")
+    socketio.run(app, debug=not is_prod, host=Config.FLASK_HOST, port=Config.FLASK_PORT, allow_unsafe_werkzeug=True, use_reloader=False)
 
 if __name__ == "__main__":
     start_server()

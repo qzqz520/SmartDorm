@@ -64,20 +64,46 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(api_bp)
 
 # ============================
-# 页面路由
+# React SPA 静态文件服务
 # ============================
+import os as _os
+_SPA_DIR = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "frontend", "dist")
+_SPA_DIR = _os.path.abspath(_SPA_DIR)
 
-@app.route("/")
-def index():
-    if "student_id" in session:
-        return redirect(url_for("monitor.admin_monitor")) if session.get("is_admin") else redirect(url_for("monitor.monitor"))
-    return redirect(url_for("auth.login"))
+if _os.path.isdir(_SPA_DIR):
+    from flask import send_from_directory
 
-@app.route("/dashboard")
-def dashboard():
-    if "student_id" not in session:
-        return redirect(url_for("auth.login"))
-    return redirect(url_for("monitor.admin_monitor")) if session.get("is_admin") else redirect(url_for("monitor.monitor"))
+    @app.route("/assets/<path:filename>")
+    def _spa_assets(filename):
+        return send_from_directory(_os.path.join(_SPA_DIR, "assets"), filename)
+
+    @app.route("/favicon.svg")
+    def _spa_favicon():
+        return send_from_directory(_SPA_DIR, "favicon.svg")
+
+    @app.route("/icons.svg")
+    def _spa_icons():
+        return send_from_directory(_SPA_DIR, "icons.svg")
+
+    # Catch-all: serve index.html for all non-API, non-static routes
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def _spa_catchall(path):
+        # Don't intercept API or Socket.IO routes
+        if path.startswith("api/") or path.startswith("socket.io"):
+            return jsonify({"error": "Not found"}), 404
+        return send_from_directory(_SPA_DIR, "index.html")
+
+# ============================
+# 初始化
+# ============================
+init_db()
+
+# 启动内置数据生成器
+import threading as _threading
+_gen_thread = _threading.Thread(target=run_data_generator, daemon=True)
+_gen_thread.start()
+logger.info("Data generator auto-started")
 
 @app.route("/api/dashboard", methods=["GET"])
 @jwt_required()
@@ -585,30 +611,6 @@ def api_student_announcements():
     db.close()
     return jsonify([dict(r) for r in rows])
 
-
-@app.route("/student/repairs")
-def student_repairs():
-    return render_template("student_repairs.html") if "student_id" in session else redirect(url_for("auth.login"))
-
-@app.route("/student/visitors")
-def student_visitors():
-    return render_template("student_visitors.html") if "student_id" in session else redirect(url_for("auth.login"))
-
-@app.route("/student/scores")
-def student_scores():
-    return render_template("student_scores.html") if "student_id" in session else redirect(url_for("auth.login"))
-
-@app.route("/student/utility")
-def student_utility():
-    return render_template("student_utility.html") if "student_id" in session else redirect(url_for("auth.login"))
-
-@app.route("/student/announcements")
-def student_announcements():
-    return render_template("student_announcements.html") if "student_id" in session else redirect(url_for("auth.login"))
-
-@app.route("/student/leave")
-def student_leave():
-    return render_template("student_leave.html") if "student_id" in session else redirect(url_for("auth.login"))
 
 @app.errorhandler(400)
 def csrf_error(e):
