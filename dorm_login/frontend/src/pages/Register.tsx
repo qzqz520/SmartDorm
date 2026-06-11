@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Building, UserPlus } from "lucide-react";
@@ -12,7 +12,7 @@ const stagger = {
 
 const item = {
   hidden: { opacity: 0, filter: "blur(4px)", y: 8 },
-  show: { opacity: 1, filter: "blur(0px)", y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+  show: { opacity: 1, filter: "blur(0px)", y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
 export default function Register() {

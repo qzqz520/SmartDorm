@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Infinity, Rocket, Shield, Brain, Play, ChevronDown } from 'lucide-react';
 
 const AnoAI = () => {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -89,7 +89,7 @@ const AnoAI = () => {
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    let frameId;
+    let frameId: number;
     const animate = () => {
       material.uniforms.iTime.value += 0.016;
       renderer.render(scene, camera);

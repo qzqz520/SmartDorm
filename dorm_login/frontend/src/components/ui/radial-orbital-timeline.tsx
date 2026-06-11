@@ -93,7 +93,7 @@ export default function RadialOrbitalTimeline({
   };
 
   useEffect(() => {
-    let rotationTimer: NodeJS.Timeout;
+    let rotationTimer: ReturnType<typeof setInterval>;
 
     if (autoRotate && viewMode === "orbital") {
       rotationTimer = setInterval(() => {
@@ -204,7 +204,7 @@ export default function RadialOrbitalTimeline({
             return (
               <div
                 key={item.id}
-                ref={(el) => (nodeRefs.current[item.id] = el)}
+                ref={(el) => { nodeRefs.current[item.id] = el; }}
                 className="absolute transition-all duration-700 cursor-pointer"
                 style={nodeStyle}
                 onClick={(e) => {
