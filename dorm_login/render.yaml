@@ -3,9 +3,10 @@ services:
     name: smartdorm
     env: python
     buildCommand: |
+      cd dorm_login
       pip install -r requirements.txt
       cd frontend && npm install && npm run build
-    startCommand: python run.py
+    startCommand: cd dorm_login && python run.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
